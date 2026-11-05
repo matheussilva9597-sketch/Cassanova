@@ -1,4 +1,9 @@
+import { MOCK_TOKEN, MOCK_TRANSACTIONS, MOCK_USER } from '@/lib/mock-data';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const USE_MOCK_API = process.env.NEXT_PUBLIC_MOCK_API === 'true';
+
+const mockDelay = () => new Promise((resolve) => setTimeout(resolve, 400));
 
 export const api = {
   // Auth endpoints
@@ -20,6 +25,10 @@ export const api = {
     },
 
     login: async (credentials: { email: string; password: string; twoFactorCode?: string }) => {
+      if (USE_MOCK_API) {
+        await mockDelay();
+        return { token: MOCK_TOKEN, user: { ...MOCK_USER, email: credentials.email || MOCK_USER.email } };
+      }
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,6 +148,10 @@ export const api = {
   // Transactions endpoints
   transactions: {
     getAll: async (token: string) => {
+      if (USE_MOCK_API) {
+        await mockDelay();
+        return MOCK_TRANSACTIONS;
+      }
       const response = await fetch(`${API_BASE_URL}/transactions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
