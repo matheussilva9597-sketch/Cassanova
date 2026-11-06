@@ -4,6 +4,7 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  dateOfBirth?: string;
   balance: number;
   bonusBalance: number;
   vipLevel: 'bronze' | 'silver' | 'gold' | 'platinum';

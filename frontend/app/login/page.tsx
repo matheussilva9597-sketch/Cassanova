@@ -1,57 +1,30 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
-import { api } from '@/lib/api';
+import { loginAccount } from '@/lib/local-auth';
 
-function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [twoFactorCode, setTwoFactorCode] = useState('');
-  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [showVerificationNotice, setShowVerificationNotice] = useState(false);
 
-  useEffect(() => {
-    // Check if user just registered
-    const registered = searchParams.get('registered');
-    const verify = searchParams.get('verify');
-    if (registered === 'true' && verify === 'pending') {
-      setShowVerificationNotice(true);
-    }
-  }, [searchParams]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
 
     try {
-      const credentials = requiresTwoFactor
-        ? { ...formData, twoFactorCode }
-        : formData;
-      const response = await api.auth.login(credentials);
-
-      if (response.requiresTwoFactor) {
-        setRequiresTwoFactor(true);
-      } else if (response.token) {
-        login(response.token, response.user);
-        router.push('/dashboard');
-      } else {
-        setError(response.message || 'Login failed');
-      }
-    } catch {
-      setError('An error occurred during login');
-    } finally {
-      setIsLoading(false);
+      const session = loginAccount(formData.email, formData.password);
+      login(session.token, session.user);
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
     }
   };
 
@@ -69,16 +42,6 @@ function LoginForm() {
             <p className="text-gray-300">Login to your Cassanova account</p>
           </div>
 
-          {/* Verification Notice */}
-          {showVerificationNotice && (
-            <div className="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg mb-6">
-              <p className="font-semibold mb-1">Registration Successful!</p>
-              <p className="text-sm">
-                Please check your email to verify your account. You may need to check your spam folder.
-              </p>
-            </div>
-          )}
-
           {/* Error Message */}
           {error && (
             <div className="bg-red-500/20 border border-red-500 text-red-200 px-4 py-3 rounded-lg mb-6">
@@ -88,94 +51,57 @@ function LoginForm() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {requiresTwoFactor ? (
-              <div>
-                <div className="bg-blue-500/20 border border-blue-500 text-blue-200 px-4 py-3 rounded-lg mb-4">
-                  <p className="font-semibold mb-1">Two-Factor Authentication Required</p>
-                  <p className="text-sm">Enter the 6-digit code from your authenticator app or a backup code.</p>
-                </div>
-                <label htmlFor="twoFactorCode" className="block text-sm font-medium text-gray-300 mb-2">
-                  Authentication Code
-                </label>
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                Email Address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all"
+                placeholder="Enter your email"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all"
+                placeholder="Enter your password"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
                 <input
-                  id="twoFactorCode"
-                  name="twoFactorCode"
-                  type="text"
-                  required
-                  autoComplete="one-time-code"
-                  value={twoFactorCode}
-                  onChange={(e) => setTwoFactorCode(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all tracking-widest text-center text-xl"
-                  placeholder="000000"
-                  maxLength={8}
+                  type="checkbox"
+                  className="w-4 h-4 rounded bg-gray-700 border-gray-600 text-yellow-400 focus:ring-yellow-400"
                 />
-              </div>
-            ) : (
-              <>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all"
-                    placeholder="Enter your email"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-400/20 transition-all"
-                    placeholder="Enter your password"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded bg-gray-700 border-gray-600 text-yellow-400 focus:ring-yellow-400"
-                    />
-                    <span className="ml-2 text-sm text-gray-300">Remember me</span>
-                  </label>
-                  <Link href="/forgot-password" className="text-sm text-yellow-400 hover:text-yellow-300">
-                    Forgot password?
-                  </Link>
-                </div>
-              </>
-            )}
+                <span className="ml-2 text-sm text-gray-300">Remember me</span>
+              </label>
+              <Link href="/forgot-password" className="text-sm text-yellow-400 hover:text-yellow-300">
+                Forgot password?
+              </Link>
+            </div>
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 font-bold rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full py-3 px-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 font-bold rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition-all transform hover:scale-105"
             >
-              {isLoading ? 'Logging in...' : requiresTwoFactor ? 'Verify Code' : 'Login'}
+              Login
             </button>
-
-            {requiresTwoFactor && (
-              <button
-                type="button"
-                onClick={() => { setRequiresTwoFactor(false); setTwoFactorCode(''); setError(''); }}
-                className="w-full py-2 px-4 text-gray-400 hover:text-gray-200 text-sm transition-all"
-              >
-                ← Back to login
-              </button>
-            )}
           </form>
 
           {/* Divider */}
@@ -207,17 +133,5 @@ function LoginForm() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 py-16 px-4 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
-      </div>
-    }>
-      <LoginForm />
-    </Suspense>
   );
 }

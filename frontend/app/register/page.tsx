@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
+import { registerAccount } from '@/lib/local-auth';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -18,9 +20,8 @@ export default function RegisterPage() {
     acceptTerms: false,
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -34,10 +35,8 @@ export default function RegisterPage() {
       return;
     }
 
-    setIsLoading(true);
-
     try {
-      const response = await api.auth.register({
+      const session = registerAccount({
         username: formData.username,
         email: formData.email,
         password: formData.password,
@@ -45,17 +44,10 @@ export default function RegisterPage() {
         lastName: formData.lastName,
         dateOfBirth: formData.dateOfBirth,
       });
-
-      if (response.userId) {
-        // Show success message and redirect to a verification pending page
-        router.push('/login?registered=true&verify=pending');
-      } else {
-        setError(response.message || 'Registration failed');
-      }
-    } catch {
-      setError('An error occurred during registration');
-    } finally {
-      setIsLoading(false);
+      login(session.token, session.user);
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
     }
   };
 
@@ -225,10 +217,9 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 font-bold rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              className="w-full py-3 px-4 bg-gradient-to-r from-yellow-400 to-yellow-600 text-gray-900 font-bold rounded-lg hover:from-yellow-500 hover:to-yellow-700 transition-all transform hover:scale-105"
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              Create Account
             </button>
           </form>
 
