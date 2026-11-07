@@ -66,3 +66,20 @@ export interface Transaction {
   description: string;
   createdAt: string;
 }
+
+export interface ScratchCard {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  price_cents: number;
+  theme: 'gold' | 'emerald' | 'ruby';
+  sort_order: number;
+}
+
+export interface ScratchCardPlayResult {
+  play_id: string;
+  prize_cents: number;
+  prize_label: string;
+  balance_cents: number;
+}

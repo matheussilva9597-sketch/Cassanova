@@ -25,6 +25,9 @@ export default function Header() {
             <Link href="/live-casino" className="hover:text-yellow-400 transition-colors font-medium">
               Live Casino
             </Link>
+            <Link href="/raspadinhas" className="hover:text-yellow-400 transition-colors font-medium">
+              Raspadinhas
+            </Link>
             <Link href="/promotions" className="hover:text-yellow-400 transition-colors font-medium">
               Promotions
             </Link>
@@ -73,6 +76,9 @@ export default function Header() {
               </Link>
               <Link href="/live-casino" className="hover:text-yellow-400 transition-colors">
                 Live Casino
+              </Link>
+              <Link href="/raspadinhas" className="hover:text-yellow-400 transition-colors">
+                Raspadinhas
               </Link>
               <Link href="/promotions" className="hover:text-yellow-400 transition-colors">
                 Promotions
